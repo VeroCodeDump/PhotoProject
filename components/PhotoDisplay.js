@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Text, View, StyleSheet, Image, useWindowDimensions, TouchableOpacity, NetInfo, Alert, Platform } from 'react-native';
+import { FlatList, Text, View, StyleSheet, Image, useWindowDimensions, TouchableOpacity, Alert, Platform } from 'react-native';
 import Realm from 'realm';
-import { useNetInfo } from "@react-native-community/netinfo";
+import NetInfo from "@react-native-community/netinfo";
 
 
 
@@ -12,35 +12,63 @@ export default PhotoDisplay = () => {
     const [data, setData] = useState([]);
     const [isDetail, setIsDetail] = useState(false)
     let { height, width } = useWindowDimensions()
-    const netInfo = useNetInfo();
+    const Photo = {
+        name: "Photo",
+        properties: {
+            id: "string",
+            owner: "string",
+            secret: "string",
+            server: "string",
+            farm: { type: "int", default: 0 },
+            title: "string",
+            isfriend: { type: "int", default: 0 },
+            isfamily: { type: "int", default: 0 },
+            ispublic: { type: "int", default: 0 },
+            is_primary: { type: "int", default: 0 },
+            has_comment: { type: "int", default: 0 },
 
 
+
+
+        },
+        primaryKey: "id",
+    };
+
+    const realm = new Realm({
+        schema: [Photo],
+        deleteRealmIfMigrationNeeded: true,
+    });
 
 
     useEffect(() => {
         if (Platform.OS === "android") {
-            if (netInfo.isConnected) {
-                Alert.alert("You are online!");
-                fetch('https://www.flickr.com/services/rest/?method=flickr.galleries.getPhotos&api_key=f9736f4d370f9c7115a952951b506569&gallery_id=66911286-72157647277042064&format=json&nojsoncallback=1')
-                    .then((response) => response.json())
-                    .then((json) => {
-                        setData(json)
-                        savePhotos(json.photos.photo)
+            NetInfo.fetch().then(state => {
+                if (state.isConnected) {
+                    Alert.alert("You are online!");
+                    fetch('https://www.flickr.com/services/rest/?method=flickr.galleries.getPhotos&api_key=f9736f4d370f9c7115a952951b506569&gallery_id=66911286-72157647277042064&format=json&nojsoncallback=1')
+                        .then((response) => response.json())
+                        .then((json) => {
+                            setData(json)
+                            savePhotos(json.photos.photo)
 
-                    })
-                    .catch((error) => console.error(error))
-                    .finally(() => {
-                        console.log("Hi")
-                        setLoading(false)
-                    });
-            } else {
-                Alert.alert("You are offline!", netInfo.isConnected);
-                const js = {}
-                const photo = Realm.objects("Photo");
-                js.photos = photo
-                setData(js)
-                setLoading(false)
-            }
+                        })
+                        .catch((error) => console.error(error))
+                        .finally(() => {
+                            console.log("Hi")
+                            setLoading(false)
+                        });
+                } else {
+                    Alert.alert("You are offline!");
+                    const js = {}
+                    const photo = realm.objects("Photo");
+                    //const photo = {};
+                    console.log(photo)
+                    js.photos = {}
+                    js.photos.photo = photo
+                    setData(js)
+                    setLoading(false)
+                }
+            })
 
         }
 
@@ -52,8 +80,8 @@ export default PhotoDisplay = () => {
         {
 
             photos.forEach(photo => {
-                Realm.write(() => {
-                    Realm.create("Photo", {
+                realm.write(() => {
+                    realm.create("Photo", {
                         id: photo.id,
                         owner: photo.owner,
                         secret: photo.secret,
@@ -65,7 +93,7 @@ export default PhotoDisplay = () => {
                         ispublic: photo.ispublic,
                         is_primary: photo.is_primary,
                         has_comment: photo.has_comment,
-                    }, UpdateMode.Modified);
+                    });
                 });
             })
         }
