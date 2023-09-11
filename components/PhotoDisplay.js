@@ -1,22 +1,77 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Text, View, StyleSheet, Image, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { FlatList, Text, View, StyleSheet, Image, useWindowDimensions, TouchableOpacity, NetInfo, Alert, Platform } from 'react-native';
+import Realm from 'realm';
+import { useNetInfo } from "@react-native-community/netinfo";
+
+
+
 
 
 export default PhotoDisplay = () => {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
     const [isDetail, setIsDetail] = useState(false)
-    console.log(data);
     let { height, width } = useWindowDimensions()
+    const netInfo = useNetInfo();
+
+
 
 
     useEffect(() => {
-        fetch('https://www.flickr.com/services/rest/?method=flickr.galleries.getPhotos&api_key=f9736f4d370f9c7115a952951b506569&gallery_id=66911286-72157647277042064&format=json&nojsoncallback=1')
-            .then((response) => response.json())
-            .then((json) => setData(json))
-            .catch((error) => console.error(error))
-            .finally(() => setLoading(false));
+        if (Platform.OS === "android") {
+            if (netInfo.isConnected) {
+                Alert.alert("You are online!");
+                fetch('https://www.flickr.com/services/rest/?method=flickr.galleries.getPhotos&api_key=f9736f4d370f9c7115a952951b506569&gallery_id=66911286-72157647277042064&format=json&nojsoncallback=1')
+                    .then((response) => response.json())
+                    .then((json) => {
+                        setData(json)
+                        savePhotos(json.photos.photo)
+
+                    })
+                    .catch((error) => console.error(error))
+                    .finally(() => {
+                        console.log("Hi")
+                        setLoading(false)
+                    });
+            } else {
+                Alert.alert("You are offline!", netInfo.isConnected);
+                const js = {}
+                const photo = Realm.objects("Photo");
+                js.photos = photo
+                setData(js)
+                setLoading(false)
+            }
+
+        }
+
+
+
     }, []);
+
+    const savePhotos = (photos) => {
+        {
+
+            photos.forEach(photo => {
+                Realm.write(() => {
+                    Realm.create("Photo", {
+                        id: photo.id,
+                        owner: photo.owner,
+                        secret: photo.secret,
+                        server: photo.server,
+                        farm: photo.farm,
+                        title: photo.title,
+                        isfriend: photo.isfriend,
+                        isfamily: photo.isfamily,
+                        ispublic: photo.ispublic,
+                        is_primary: photo.is_primary,
+                        has_comment: photo.has_comment,
+                    }, UpdateMode.Modified);
+                });
+            })
+        }
+
+    }
+
 
     return (
 
@@ -43,7 +98,6 @@ export default PhotoDisplay = () => {
                             contentContainerStyle={styles.container}
                             renderItem={({ item }) => {
                                 let str = `https://farm${item.farm}.staticflickr.com/${item.server}/${item.id}_${item.secret}.jpg`
-                                console.log(str)
                                 return (
                                     <View style={{ padding: 10, flex: 1 }}>
                                         <View style={{ flex: 1 }}>
