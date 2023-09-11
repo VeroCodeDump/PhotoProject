@@ -6,20 +6,11 @@
  */
 
 import React from 'react';
-import type { PropsWithChildren } from 'react';
 import {
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
   useColorScheme,
-  View,
+  View
 } from 'react-native';
 
-import {
-  Colors,
-
-} from 'react-native/Libraries/NewAppScreen';
 import PhotoDisplay from './components/PhotoDisplay';
 
 

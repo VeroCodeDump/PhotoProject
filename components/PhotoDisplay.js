@@ -10,7 +10,6 @@ import NetInfo from "@react-native-community/netinfo";
 export default PhotoDisplay = () => {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
-    const [isDetail, setIsDetail] = useState(false)
     let { height, width } = useWindowDimensions()
     const Photo = {
         name: "Photo",
@@ -76,6 +75,7 @@ export default PhotoDisplay = () => {
 
     }, []);
 
+    // function to save photos in mobile front end db after fetch
     const savePhotos = (photos) => {
         {
 
